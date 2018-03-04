@@ -87,16 +87,20 @@ public class Utils {
                 privateKey = kf.generatePrivate(spec);
 
                 SecretKey symKey = generateSymmetricKey();
-                System.out.println("before "+Base64.encodeToString(symKey.getEncoded(), Base64.DEFAULT));
+                //System.out.println("before "+Base64.encodeToString(symKey.getEncoded(), Base64.DEFAULT));
 
                 byte[] arr = encryptSymmetricKey(symKey);
                 Key k = decryptSymmetricKey(arr);
-                System.out.println("after "+Base64.encodeToString(k.getEncoded(), Base64.DEFAULT));
+                //System.out.println("after "+Base64.encodeToString(k.getEncoded(), Base64.DEFAULT));
 
-                System.out.println(Base64.encodeToString(hashFile(k.getEncoded()), Base64.DEFAULT));
+                //System.out.println(Base64.encodeToString(hashFile(k.getEncoded()), Base64.DEFAULT));
                 byte[] ar = encryptHash(hashFile(k.getEncoded()));
-                System.out.println(Base64.encodeToString(ar, Base64.DEFAULT));
-                System.out.println(Base64.encodeToString(decryptHash(ar,publicKey), Base64.DEFAULT));
+                //System.out.println(Base64.encodeToString(ar, Base64.DEFAULT));
+                //System.out.println(Base64.encodeToString(decryptHash(ar,publicKey), Base64.DEFAULT));
+
+                byte[] t = encryptFile(k.getEncoded(), k);
+                System.out.println(Base64.encodeToString(k.getEncoded(), Base64.DEFAULT));
+                System.out.println(Base64.encodeToString(decryptFile(t,k), Base64.DEFAULT));
 
                 // Create an SSLContext that uses our TrustManager
                 sslContext = SSLContext.getInstance("TLS");
@@ -109,12 +113,26 @@ public class Utils {
         }
     }
 
-    public void encryptFile() {
-
+    public byte[] encryptFile(byte[] file, Key key) {
+        try {
+            Cipher cipher = Cipher.getInstance(key.getAlgorithm());
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+            return cipher.doFinal(file);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
-    public void decryptFile() {
-
+    public byte[] decryptFile(byte[] file, Key key) {
+        try {
+            Cipher cipher = Cipher.getInstance(key.getAlgorithm());
+            cipher.init(Cipher.DECRYPT_MODE, key);
+            return cipher.doFinal(file);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public byte[] encryptSymmetricKey(SecretKey key) {

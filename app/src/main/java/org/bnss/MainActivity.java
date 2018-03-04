@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         utils = Utils.getInstance(getApplicationContext());
-        sendHttpsRequest();
+        //sendHttpsRequest();
         //sendHttpsRequest2();
         //performFileSearch();
     }
