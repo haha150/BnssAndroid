@@ -13,6 +13,7 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyStore;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -34,6 +35,9 @@ public class Utils {
     private static Utils utils;
     private Context context;
     private SSLContext sslContext;
+    private PublicKey publicKey;
+    private PrivateKey privateKey;
+    private KeyFactory kf;
 
     private Utils(Context c) {
         this.context = c;
@@ -55,10 +59,8 @@ public class Utils {
         try {
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
             InputStream caInput = context.getResources().openRawResource(R.raw.signingca);
-            InputStream certInput = context.getResources().openRawResource(R.raw.employee1certificate);
             try {
                 X509Certificate ca = (X509Certificate) cf.generateCertificate(caInput);
-                X509Certificate cert = (X509Certificate) cf.generateCertificate(certInput);
 
                 // Create a KeyStore containing our trusted CAs
                 String keyStoreType = KeyStore.getDefaultType();
@@ -78,21 +80,23 @@ public class Utils {
                 kmf.init(keyStore2, "david".toCharArray());
                 KeyManager[] keyManagers = kmf.getKeyManagers();
 
+                publicKey = keyStore2.getCertificate("empl1").getPublicKey();
+
                 PKCS8EncodedKeySpec  spec = new PKCS8EncodedKeySpec(IOUtils.toByteArray(context.getResources().openRawResource(R.raw.employee1privatekey)));
-                KeyFactory kf = KeyFactory.getInstance("RSA");
-                PrivateKey privateKey = kf.generatePrivate(spec);
-                //Cipher cipher = Cipher.getInstance(kf.getAlgorithm());
-                //cipher.init(Cipher.ENCRYPT_MODE, privateKey);
-                //cipher.doFinal();
+                kf = KeyFactory.getInstance("RSA");
+                privateKey = kf.generatePrivate(spec);
+                
+                SecretKey symKey = generateSymmetricKey();
+                System.out.println("before "+Base64.encodeToString(symKey.getEncoded(), Base64.DEFAULT));
 
-                //System.out.println("pub key "+Base64.encodeToString(cert.getPublicKey().getEncoded(), Base64.DEFAULT));
-
-                SecretKey secretKey = generateSymmetricKey();
-                System.out.println("before "+Base64.encodeToString(secretKey.getEncoded(), Base64.DEFAULT));
-
-                byte[] arr = encryptSymmetricKey(secretKey, cert.getPublicKey());
+                byte[] arr = encryptSymmetricKey(symKey);
                 Key k = decryptSymmetricKey(arr);
                 System.out.println("after "+Base64.encodeToString(k.getEncoded(), Base64.DEFAULT));
+
+                System.out.println(Base64.encodeToString(hashFile(k.getEncoded()), Base64.DEFAULT));
+                byte[] ar = encryptHash(hashFile(k.getEncoded()));
+                System.out.println(Base64.encodeToString(ar, Base64.DEFAULT));
+                System.out.println(Base64.encodeToString(decryptHash(ar,publicKey), Base64.DEFAULT));
 
                 // Create an SSLContext that uses our TrustManager
                 sslContext = SSLContext.getInstance("TLS");
@@ -105,11 +109,18 @@ public class Utils {
         }
     }
 
-    public byte[] encryptSymmetricKey(SecretKey key, PublicKey pubKey) {
-        Cipher cipher = null;
+    public void encryptFile() {
+
+    }
+
+    public void decryptFile() {
+
+    }
+
+    public byte[] encryptSymmetricKey(SecretKey key) {
         try {
-            cipher = Cipher.getInstance(pubKey.getAlgorithm());
-            cipher.init(Cipher.WRAP_MODE, pubKey);
+            Cipher cipher = Cipher.getInstance(publicKey.getAlgorithm());
+            cipher.init(Cipher.WRAP_MODE, publicKey);
             return cipher.wrap(key);
         } catch (Exception e) {
             e.printStackTrace();
@@ -118,12 +129,8 @@ public class Utils {
     }
 
     public Key decryptSymmetricKey(byte[] key) {
-        Cipher cipher = null;
         try {
-            PKCS8EncodedKeySpec  spec = new PKCS8EncodedKeySpec(IOUtils.toByteArray(context.getResources().openRawResource(R.raw.employee1privatekey)));
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            PrivateKey privateKey = kf.generatePrivate(spec);
-            cipher = Cipher.getInstance(kf.getAlgorithm());
+            Cipher cipher = Cipher.getInstance(kf.getAlgorithm());
             cipher.init(Cipher.UNWRAP_MODE, privateKey);
             return cipher.unwrap(key, "AES", Cipher.SECRET_KEY);
         } catch (Exception e) {
@@ -141,6 +148,38 @@ public class Utils {
         }
         keyGen.init(256);
         return keyGen.generateKey();
+    }
+
+    public byte[] encryptHash(byte[] hash) {
+        try {
+            Cipher cipher = Cipher.getInstance(kf.getAlgorithm());
+            cipher.init(Cipher.ENCRYPT_MODE, privateKey);
+            return cipher.doFinal(hash);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public byte[] decryptHash(byte[] hash, PublicKey pubKey) {
+        try {
+            Cipher cipher = Cipher.getInstance(pubKey.getAlgorithm());
+            cipher.init(Cipher.DECRYPT_MODE, pubKey);
+            return cipher.doFinal(hash);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public byte[] hashFile(byte[] file) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            return md.digest(file);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public String getStringFromInputStream(InputStream is) {
