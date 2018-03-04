@@ -9,8 +9,13 @@ import android.os.Bundle;
 import android.util.Log;
 
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
+import java.util.List;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -33,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
         utils = Utils.getInstance(getApplicationContext());
         sendHttpsRequest();
+        //sendHttpsRequest2();
         //performFileSearch();
     }
 
@@ -70,7 +76,47 @@ public class MainActivity extends AppCompatActivity {
             conn.setRequestMethod("GET");
 
             InputStream in = conn.getInputStream();
-            System.out.println(utils.getStringFromInputStream(in));
+            String json = utils.getStringFromInputStream(in);
+            System.out.println(json);
+            Gson gson = new Gson();
+            List<User> users = gson.fromJson(json, new TypeToken<List<User>>(){}.getType());
+            for(User u : users) {
+                System.out.println(u.getUsername());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendHttpsRequest2() {
+        try {
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
+                    .permitAll().build();
+            StrictMode.setThreadPolicy(policy);
+
+            URL url = new URL("https://192.168.1.169:8443/rest/file/add");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setSSLSocketFactory(utils.getSslContext().getSocketFactory());
+            conn.setHostnameVerifier(hostnameVerifier);
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/text");
+            conn.setRequestMethod("PUT");
+            Gson gson = new Gson();
+            Data d = new Data();
+            d.setFrom("me");
+            d.setRecipient("you");
+            d.setFile(new byte[]{1});
+            d.setHash(new byte[]{2});
+            d.setKey(new byte[]{3});
+            d.setName("file");
+            OutputStream os = conn.getOutputStream();
+            os.write(gson.toJson(d).getBytes());
+            os.flush();
+            InputStream in = conn.getInputStream();
+            String json = utils.getStringFromInputStream(in);
+            System.out.println(json);
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }

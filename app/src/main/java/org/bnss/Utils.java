@@ -85,7 +85,7 @@ public class Utils {
                 PKCS8EncodedKeySpec  spec = new PKCS8EncodedKeySpec(IOUtils.toByteArray(context.getResources().openRawResource(R.raw.employee1privatekey)));
                 kf = KeyFactory.getInstance("RSA");
                 privateKey = kf.generatePrivate(spec);
-                
+
                 SecretKey symKey = generateSymmetricKey();
                 System.out.println("before "+Base64.encodeToString(symKey.getEncoded(), Base64.DEFAULT));
 
