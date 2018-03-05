@@ -33,13 +33,15 @@ public class Utils {
     private static Utils utils;
     private Context context;
     private SSLContext sslContext;
-    private PublicKey publicKey;
     private PrivateKey privateKey;
     private KeyFactory kf;
+    private String whoami;
 
     private Utils(Context c) {
         this.context = c;
         initCerts();
+        whoami = "ChunHeng Jen";
+        //whoami = "Ali Symeri";
     }
 
     public static Utils getInstance(Context c) {
@@ -72,33 +74,15 @@ public class Utils {
                 tmf.init(keyStore);
 
                 KeyStore keyStore2 = KeyStore.getInstance("PKCS12");
-                keyStore2.load(context.getResources().openRawResource(R.raw.employee1keystore), "password".toCharArray());
+                keyStore2.load(context.getResources().openRawResource(R.raw.employee3keystore), "password".toCharArray());
 
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
                 kmf.init(keyStore2, "david".toCharArray());
                 KeyManager[] keyManagers = kmf.getKeyManagers();
 
-                publicKey = keyStore2.getCertificate("ali").getPublicKey();
-
-                PKCS8EncodedKeySpec  spec = new PKCS8EncodedKeySpec(IOUtils.toByteArray(context.getResources().openRawResource(R.raw.employee1privatekey)));
+                PKCS8EncodedKeySpec  spec = new PKCS8EncodedKeySpec(IOUtils.toByteArray(context.getResources().openRawResource(R.raw.employee3privatekey)));
                 kf = KeyFactory.getInstance("RSA");
                 privateKey = kf.generatePrivate(spec);
-
-                SecretKey symKey = generateSymmetricKey();
-                //System.out.println("before "+Base64.encodeToString(symKey.getEncoded(), Base64.DEFAULT));
-
-                byte[] arr = encryptSymmetricKey(symKey);
-                Key k = decryptSymmetricKey(arr);
-                //System.out.println("after "+Base64.encodeToString(k.getEncoded(), Base64.DEFAULT));
-
-                //System.out.println(Base64.encodeToString(hashFile(k.getEncoded()), Base64.DEFAULT));
-                byte[] ar = encryptHash(hashFile(k.getEncoded()));
-                //System.out.println(Base64.encodeToString(ar, Base64.DEFAULT));
-                //System.out.println(Base64.encodeToString(decryptHash(ar,publicKey), Base64.DEFAULT));
-
-                byte[] t = encryptFile(k.getEncoded(), k);
-                System.out.println(Base64.encodeToString(k.getEncoded(), Base64.DEFAULT));
-                System.out.println(Base64.encodeToString(decryptFile(t,k), Base64.DEFAULT));
 
                 // Create an SSLContext that uses our TrustManager
                 sslContext = SSLContext.getInstance("TLS");
@@ -133,10 +117,10 @@ public class Utils {
         return null;
     }
 
-    public byte[] encryptSymmetricKey(SecretKey key) {
+    public byte[] encryptSymmetricKey(SecretKey key, Key recipient) {
         try {
-            Cipher cipher = Cipher.getInstance(publicKey.getAlgorithm());
-            cipher.init(Cipher.WRAP_MODE, publicKey);
+            Cipher cipher = Cipher.getInstance(recipient.getAlgorithm());
+            cipher.init(Cipher.WRAP_MODE, recipient);
             return cipher.wrap(key);
         } catch (Exception e) {
             e.printStackTrace();
@@ -225,5 +209,9 @@ public class Utils {
 
         return sb.toString();
 
+    }
+
+    public String getWhoami() {
+        return whoami;
     }
 }

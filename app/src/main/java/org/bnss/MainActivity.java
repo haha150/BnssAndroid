@@ -1,18 +1,25 @@
 package org.bnss;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.StrictMode;
+import android.provider.MediaStore;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Base64;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 
 import com.google.gson.Gson;
@@ -20,16 +27,19 @@ import com.google.gson.reflect.TypeToken;
 
 import org.apache.commons.io.FileUtils;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.security.Key;
+import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.crypto.SecretKey;
@@ -37,8 +47,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
-
-import static java.nio.charset.Charset.forName;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -53,17 +61,17 @@ public class MainActivity extends AppCompatActivity {
     private Spinner spinner;
     private List<String> spinnerArray;
     private String selectedRecipient;
+    private File file;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        requestRead();
         spinner = findViewById(R.id.spinner2);
         spinnerArray =  new ArrayList<>();
         utils = Utils.getInstance(getApplicationContext());
-        sendHttpsRequest();
-        //sendHttpsRequest2();
-        //performFileSearch();
+        getUsers();
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 this, android.R.layout.simple_spinner_item, spinnerArray);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -92,9 +100,20 @@ public class MainActivity extends AppCompatActivity {
         sendFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                sendHttpsRequest4();
+                if(file == null) {
+                    makeToast("Select file first");
+                    return;
+                }
+                if(selectedRecipient == null) {
+                    makeToast("Select recipient first");
+                    return;
+                }
+                sendFile();
+                file = null;
             }
         });
+
+        getIncomingFiles();
     }
 
     public void performFileSearch() {
@@ -107,21 +126,31 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         if (requestCode == 42 && resultCode == Activity.RESULT_OK) {
-            Uri uri = null;
             if (resultData != null) {
-                uri = resultData.getData();
-                System.out.println(uri.toString());
+                Uri uri = resultData.getData();
+                file = new File(FilePath.getPath(getApplicationContext() ,uri));
             }
         }
     }
 
-    public void sendHttpsRequest() {
+    public void requestRead() {
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                    1);
+        }
+    }
+
+    public void getUsers() {
         try {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
                     .permitAll().build();
             StrictMode.setThreadPolicy(policy);
 
-            URL url = new URL("https://10.68.90.142:8443/rest/users");
+            URL url = new URL("https://192.168.1.239:8443/rest/users");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setSSLSocketFactory(utils.getSslContext().getSocketFactory());
             conn.setHostnameVerifier(hostnameVerifier);
@@ -138,62 +167,85 @@ public class MainActivity extends AppCompatActivity {
             List<User> users = gson.fromJson(json, new TypeToken<List<User>>(){}.getType());
             for(User u : users) {
                 spinnerArray.add(u.getUsername());
-                System.out.println(u.getUsername());
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void sendHttpsRequest2() {
-        try {
-            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
-                    .permitAll().build();
-            StrictMode.setThreadPolicy(policy);
+    public void sendFile() {
+                try {
+                    PublicKey pubKey = getPublicKey(selectedRecipient);
+                    SecretKey symKey = utils.generateSymmetricKey();
+                    byte[] fileArr = null;
+                    byte[] hashedFile = null;
+                    try {
+                        fileArr = FileUtils.readFileToByteArray(file);
+                        hashedFile = utils.hashFile(fileArr);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    byte[] encryptedFile = utils.encryptFile(fileArr, symKey);
+                    byte[] encryptedSymKey = utils.encryptSymmetricKey(symKey, pubKey);
+                    byte[] encryptedHash = utils.encryptHash(hashedFile);
 
-            URL url = new URL("https://10.68.90.142:8443/rest/file/add");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setSSLSocketFactory(utils.getSslContext().getSocketFactory());
-            conn.setHostnameVerifier(hostnameVerifier);
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Accept", "application/text");
-            conn.setRequestMethod("PUT");
-            Gson gson = new Gson();
-            Data2 d = new Data2();
-            d.setFrom("Ali Symeri");
-            d.setRecipient(selectedRecipient);
-            byte[] arr = utils.generateSymmetricKey().getEncoded();
-            System.out.println(Base64.encodeToString(arr, Base64.DEFAULT));
-            d.setFile(utils.generateSymmetricKey().getEncoded());
-            d.setHash(arr);
-            d.setKey(utils.generateSymmetricKey().getEncoded());
-            d.setName("file name");
-            OutputStream os = conn.getOutputStream();
-            os.write(gson.toJson(d).getBytes());
-            os.flush();
-            InputStream in = conn.getInputStream();
-            String json = utils.getStringFromInputStream(in);
-            System.out.println(json);
+                    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
+                            .permitAll().build();
+                    StrictMode.setThreadPolicy(policy);
 
+                    URL url = new URL("https://192.168.1.239:8443/rest/file/add");
+                    HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+                    conn.setSSLSocketFactory(utils.getSslContext().getSocketFactory());
+                    conn.setHostnameVerifier(hostnameVerifier);
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setRequestProperty("Accept", "application/text");
+                    conn.setRequestMethod("PUT");
+                    Gson gson = new Gson();
+                    SendData d = new SendData();
+                    d.setFrom(utils.getWhoami());
+                    d.setRecipient(selectedRecipient);
+                    d.setFile(encryptedFile);
+                    d.setHash(encryptedHash);
+                    d.setKey(encryptedSymKey);
+                    d.setName(file.getName());
+                    OutputStream os = conn.getOutputStream();
+                    os.write(gson.toJson(d).getBytes());
+                    os.flush();
+                    InputStream in = conn.getInputStream();
+                    String text = utils.getStringFromInputStream(in);
+                    System.out.println(text);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            makeToast("Successfully sent file");
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            makeToast("Failed to send file");
+                        }
+                    });
+                }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
-    public void sendHttpsRequest3() {
+    public PublicKey getPublicKey(String selectedRecipient) {
         try {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
                     .permitAll().build();
             StrictMode.setThreadPolicy(policy);
-
-            URL url = new URL("https://10.68.90.142:8443/rest/filess/ab");
+            String oldLink = "https://192.168.1.239:8443/rest/certificate/" + selectedRecipient;
+            String link = oldLink.replaceAll(" ", "%20");
+            URL url = new URL(link);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setSSLSocketFactory(utils.getSslContext().getSocketFactory());
             conn.setHostnameVerifier(hostnameVerifier);
 
             conn.setRequestMethod("GET");
-            File f = new File(getFilesDir(),"test.der");
+            File f = new File(getFilesDir(),"pubkey.der");
             InputStream inputStream = conn.getInputStream();
             FileOutputStream outputStream = new FileOutputStream(f);
 
@@ -209,23 +261,26 @@ public class MainActivity extends AppCompatActivity {
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
             InputStream caInput = new FileInputStream(f);
             try {
-                X509Certificate ca = (X509Certificate) cf.generateCertificate(caInput);
-                System.out.println(ca);
+                X509Certificate recipient = (X509Certificate) cf.generateCertificate(caInput);
+                return recipient.getPublicKey();
             } catch (Exception e) {
                 System.out.println("failed");
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return null;
     }
 
-    public void sendHttpsRequest4() {
+    public void getIncomingFiles() {
         try {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
                     .permitAll().build();
             StrictMode.setThreadPolicy(policy);
 
-            URL url = new URL("https://10.68.90.142:8443/rest/files/ChunHeng%20Jen");
+            String oldLink = "https://192.168.1.239:8443/rest/files/" + utils.getWhoami();
+            String link = oldLink.replaceAll(" ", "%20");
+            URL url = new URL(link);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setSSLSocketFactory(utils.getSslContext().getSocketFactory());
             conn.setHostnameVerifier(hostnameVerifier);
@@ -239,14 +294,32 @@ public class MainActivity extends AppCompatActivity {
             System.out.println(json);
 
             Gson gson = new Gson();
-            List<Data> datas = gson.fromJson(json, new TypeToken<List<Data>>(){}.getType());
-            for(Data d : datas) {
-                byte[] decodedKey = Base64.decode(d.getHash(),0);
-                //SecretKey originalKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
-                System.out.println(Base64.encodeToString(decodedKey, Base64.DEFAULT));
+            List<ReceiveData> datas = gson.fromJson(json, new TypeToken<List<ReceiveData>>(){}.getType());
+            for(ReceiveData d : datas) {
+                byte[] decodedHash = Base64.decode(d.getHash(),0);
+                byte[] decodedSymKey = Base64.decode(d.getKey(),0);
+                byte[] decodedFile = Base64.decode(d.getFile(),0);
+                PublicKey pubKey = getPublicKey(d.getFrom());
+                byte[] decryptedHash = utils.decryptHash(decodedHash, pubKey);
+                Key decryptedSymKey = utils.decryptSymmetricKey(decodedSymKey);
+                byte[] decryptedFile = utils.decryptFile(decodedFile, decryptedSymKey);
+                byte[] hashedFile = utils.hashFile(decryptedFile);
+
+                if(!Arrays.equals(decryptedHash, hashedFile)) {
+                    makeToast("File hash is invalid, skipping save file");
+                    return;
+                }
+                File file = new File(Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DOWNLOADS), d.getName());
+                FileUtils.writeByteArrayToFile(file, decryptedFile);
+                makeToast("Saved file in downloads: " + file.getName());
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void makeToast(String msg) {
+        Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
     }
 }

@@ -1,7 +1,7 @@
 package org.bnss;
 
 
-public class Data2 {
+public class SendData {
 
 	private Long id;
 	private String name;
@@ -11,7 +11,7 @@ public class Data2 {
 	private byte[] key;
 	private byte[] hash;
 
-	public Data2() {
+	public SendData() {
 	}
 
 	public Long getId() {
