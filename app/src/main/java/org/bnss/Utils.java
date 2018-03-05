@@ -9,7 +9,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyStore;
@@ -23,7 +22,6 @@ import java.security.spec.PKCS8EncodedKeySpec;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -73,14 +71,14 @@ public class Utils {
                 TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
                 tmf.init(keyStore);
 
-                KeyStore keyStore2 = KeyStore.getInstance("BKS");
+                KeyStore keyStore2 = KeyStore.getInstance("PKCS12");
                 keyStore2.load(context.getResources().openRawResource(R.raw.employee1keystore), "password".toCharArray());
 
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
                 kmf.init(keyStore2, "david".toCharArray());
                 KeyManager[] keyManagers = kmf.getKeyManagers();
 
-                publicKey = keyStore2.getCertificate("empl1").getPublicKey();
+                publicKey = keyStore2.getCertificate("ali").getPublicKey();
 
                 PKCS8EncodedKeySpec  spec = new PKCS8EncodedKeySpec(IOUtils.toByteArray(context.getResources().openRawResource(R.raw.employee1privatekey)));
                 kf = KeyFactory.getInstance("RSA");

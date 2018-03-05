@@ -6,7 +6,7 @@ public class User {
 	private String username;
 	private String password;
 	private String secret;
-	private byte[] cert;
+	private String cert;
 
 	public User() {
 	}
@@ -42,13 +42,12 @@ public class User {
 	public void setSecret(String secret) {
 		this.secret = secret;
 	}
-	
-	public byte[] getCert() {
+
+	public String getCert() {
 		return cert;
 	}
 
-	public void setCert(byte[] cert) {
+	public void setCert(String cert) {
 		this.cert = cert;
 	}
-
 }

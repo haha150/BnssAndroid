@@ -1,17 +1,17 @@
 package org.bnss;
 
 
-public class Data {
+public class Data2 {
 
 	private Long id;
 	private String name;
 	private String from;
 	private String recipient;
-	private String file;
-	private String key;
-	private String hash;
+	private byte[] file;
+	private byte[] key;
+	private byte[] hash;
 
-	public Data() {
+	public Data2() {
 	}
 
 	public Long getId() {
@@ -38,27 +38,27 @@ public class Data {
 		this.recipient = recipient;
 	}
 
-	public String getFile() {
+	public byte[] getFile() {
 		return file;
 	}
 
-	public void setFile(String file) {
+	public void setFile(byte[] file) {
 		this.file = file;
 	}
 
-	public String getKey() {
+	public byte[] getKey() {
 		return key;
 	}
 
-	public void setKey(String key) {
+	public void setKey(byte[] key) {
 		this.key = key;
 	}
 
-	public String getHash() {
+	public byte[] getHash() {
 		return hash;
 	}
 
-	public void setHash(String hash) {
+	public void setHash(byte[] hash) {
 		this.hash = hash;
 	}
 
