@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
     private List<String> spinnerArray;
     private String selectedRecipient;
     private File file;
+    private Button selectFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Button selectFile = findViewById(R.id.selectFileButton);
+        selectFile = findViewById(R.id.selectFileButton);
         selectFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -142,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
             if (resultData != null) {
                 Uri uri = resultData.getData();
                 file = new File(FilePath.getPath(getApplicationContext(), uri));
+                selectFile.setText(file.getName());
             }
         }
     }

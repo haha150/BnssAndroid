@@ -4,9 +4,9 @@ public class User {
 
 	private Long id;
 	private String username;
-	private String password;
-	private String secret;
-	private String cert;
+	private String attribute;
+	private String op;
+	private String value;
 
 	public User() {
 	}
@@ -27,27 +27,27 @@ public class User {
 		this.username = username;
 	}
 
-	public String getPassword() {
-		return password;
+	public String getAttribute() {
+		return attribute;
 	}
 
-	public void setPassword(String password) {
-		this.password = password;
+	public void setAttribute(String attribute) {
+		this.attribute = attribute;
 	}
 
-	public String getSecret() {
-		return secret;
+	public String getOp() {
+		return op;
 	}
 
-	public void setSecret(String secret) {
-		this.secret = secret;
+	public void setOp(String op) {
+		this.op = op;
 	}
 
-	public String getCert() {
-		return cert;
+	public String getValue() {
+		return value;
 	}
 
-	public void setCert(String cert) {
-		this.cert = cert;
+	public void setValue(String value) {
+		this.value = value;
 	}
 }

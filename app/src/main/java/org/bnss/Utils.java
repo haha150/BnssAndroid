@@ -57,9 +57,9 @@ public class Utils {
     private Utils(Context c) {
         this.context = c;
         initCerts();
-        //whoami = "ChunHeng Jen";
-        whoami = "Ali Symeri";
-        //whoami = "Farhad Zareafifi";
+        //whoami = "ChunHengJen";
+        //whoami = "AliSymeri";
+        whoami = "FarhadZareafifi";
     }
 
     public static Utils getInstance(Context c) {
@@ -92,13 +92,13 @@ public class Utils {
                 tmf.init(keyStore);
 
                 KeyStore keyStore2 = KeyStore.getInstance("PKCS12");
-                keyStore2.load(context.getResources().openRawResource(R.raw.employee1keystore), "password".toCharArray());
+                keyStore2.load(context.getResources().openRawResource(R.raw.employee2keystore), "password".toCharArray());
 
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
                 kmf.init(keyStore2, "david".toCharArray());
                 KeyManager[] keyManagers = kmf.getKeyManagers();
 
-                PKCS8EncodedKeySpec  spec = new PKCS8EncodedKeySpec(IOUtils.toByteArray(context.getResources().openRawResource(R.raw.employee1privatekey)));
+                PKCS8EncodedKeySpec  spec = new PKCS8EncodedKeySpec(IOUtils.toByteArray(context.getResources().openRawResource(R.raw.employee2privatekey)));
                 kf = KeyFactory.getInstance("RSA");
                 privateKey = kf.generatePrivate(spec);
 
@@ -232,7 +232,7 @@ public class Utils {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
                     .permitAll().build();
             StrictMode.setThreadPolicy(policy);
-            String oldLink = "https://192.168.1.239:8443/rest/certificate/" + selectedRecipient;
+            String oldLink = "https://10.68.89.124:8443/rest/certificate/" + selectedRecipient;
             String link = oldLink.replaceAll(" ", "%20");
             URL url = new URL(link);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
@@ -273,7 +273,7 @@ public class Utils {
                     .permitAll().build();
             StrictMode.setThreadPolicy(policy);
 
-            URL url = new URL("https://192.168.1.239:8443/rest/users");
+            URL url = new URL("https://10.68.89.124:8443/rest/users");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setSSLSocketFactory(getSslContext().getSocketFactory());
             conn.setHostnameVerifier(hostnameVerifier);
@@ -318,7 +318,7 @@ public class Utils {
                     .permitAll().build();
             StrictMode.setThreadPolicy(policy);
 
-            URL url = new URL("https://192.168.1.239:8443/rest/file/add");
+            URL url = new URL("https://10.68.89.124:8443/rest/file/add");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setSSLSocketFactory(getSslContext().getSocketFactory());
             conn.setHostnameVerifier(hostnameVerifier);
@@ -351,7 +351,7 @@ public class Utils {
                     .permitAll().build();
             StrictMode.setThreadPolicy(policy);
 
-            String oldLink = "https://192.168.1.239:8443/rest/files/" + whoami;
+            String oldLink = "https://10.68.89.124:8443/rest/files/" + whoami;
             String link = oldLink.replaceAll(" ", "%20");
             URL url = new URL(link);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
@@ -405,7 +405,7 @@ public class Utils {
                     .permitAll().build();
             StrictMode.setThreadPolicy(policy);
 
-            URL url = new URL("https://192.168.1.239:8443/rest/file/delete/" + id);
+            URL url = new URL("https://10.68.89.124:8443/rest/file/delete/" + id);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setSSLSocketFactory(getSslContext().getSocketFactory());
             conn.setHostnameVerifier(hostnameVerifier);

@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/Bnss.iml" filepath="$PROJECT_DIR$/Bnss.iml" />
       <module fileurl="file://D:\Downloads\BnssAndroid\Bnss.iml" filepath="D:\Downloads\BnssAndroid\Bnss.iml" />
       <module fileurl="file://$PROJECT_DIR$/BnssAndroid.iml" filepath="$PROJECT_DIR$/BnssAndroid.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
